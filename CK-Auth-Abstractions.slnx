@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="appveyor.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="NuGet.config" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/CK.Auth.Abstractions.Tests/CK.Auth.Abstractions.Tests.csproj" />
+  </Folder>
+  <Project Path="CK.Auth.Abstractions/CK.Auth.Abstractions.csproj" />
+</Solution>
