@@ -4,8 +4,8 @@
     <Description>Defines IUserInfo, IAuthenticationInfo as well as default implementations like StdUserInfo, StdAuthenticationInfo and extensible StdAuthenticationTypeSystem.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="CK.Abstractions" Version="29.0.1" />
+    <PackageReference Include="CK.Abstractions" Version="29.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="26.0.1" />
+    <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="26.0.2" />
   </ItemGroup>
 </Project>
