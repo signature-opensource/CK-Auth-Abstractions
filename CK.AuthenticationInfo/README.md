@@ -44,6 +44,26 @@ administrator impersonating a weak actor acts at `Unsafe` level.
 `Impersonate` is only the mechanism. Whether an impersonation is allowed is decided by the optional
 [`IImpersonationService`](IImpersonationService.cs): without it, any impersonation is refused.
 
+## Login contracts
+
+The authentication center logs users in through these transport neutral contracts (no HTTP, no SQL),
+implemented by the back-end packages (the database, the weak actors, etc.):
+
+- [`ILoginProvider`](Login/ILoginProvider.cs) (multiple): handles one or more provider names. A scheme is a provider
+  name optionally followed by a dot and a suffix (`"Oidc.Azure"` is handled by `"Oidc"`, see
+  [`LoginScheme`](Login/LoginScheme.cs)). The basic login is the `"Basic"` provider with a
+  [`BasicLoginPayload`](Login/BasicLoginPayload.cs), whose `ToString()` never shows the password. The payload is
+  provider dependent and never leaves the process that handles the login.
+- [`UserLoginResult`](Login/UserLoginResult.cs): a successful (non anonymous) `User` at the highest level it can reach,
+  or a positive failure code with its reason, possibly flagged as an unregistered user.
+- [`ILoginValidator`](Login/ILoginValidator.cs) (optional, multiple): when present, a login is first checked
+  (`actualLogin` is false), then validated, then actually done.
+- [`IAutoCreateAccountService`](Login/IAutoCreateAccountService.cs) and
+  [`IAutoBindingAccountService`](Login/IAutoBindingAccountService.cs) (optional): called for an unregistered user,
+  respectively when nobody is logged in and when a user is logged in.
+- [`LoginContext`](Login/LoginContext.cs): the scheme, the payload, the initial authentication and free user data
+  (an invitation token for instance). The first error set cancels the login.
+
 ## Identity restoration
 
 A command that entered the System has been validated there: its `ActorId` (and `ActualActorId`) can be
