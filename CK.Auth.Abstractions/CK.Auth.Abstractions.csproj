@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Abstractions" Version="31.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="Newtonsoft.Json" Version="14.0.1-beta2" />
     <PackageReference Include="CK.ActivityMonitor.SimpleSender" Version="27.1.0" />
   </ItemGroup>
 </Project>
