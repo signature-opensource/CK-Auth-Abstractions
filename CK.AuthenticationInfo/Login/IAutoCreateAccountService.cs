@@ -11,7 +11,7 @@ namespace CK.Core;
 public interface IAutoCreateAccountService : ISingletonAutoService
 {
     /// <summary>
-    /// Called when a login failed with <see cref="UserLoginResult.IsUnregisteredUser"/> and nobody is
+    /// Called when a login failed with <see cref="ActorLoginResult.IsUnregisteredUser"/> and nobody is
     /// currently logged in (the <see cref="LoginContext.InitialAuthentication"/> actual user is the anonymous).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -20,5 +20,5 @@ public interface IAutoCreateAccountService : ISingletonAutoService
     /// The login result of the created (and logged in) account, or null if the account is not created
     /// (with an error set on the context or the standard "automatic registration is disabled" error).
     /// </returns>
-    ValueTask<UserLoginResult?> CreateAccountAndLoginAsync( IActivityMonitor monitor, LoginContext context );
+    ValueTask<ActorLoginResult?> CreateAccountAndLoginAsync( IActivityMonitor monitor, LoginContext context );
 }

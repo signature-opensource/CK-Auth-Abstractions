@@ -7,38 +7,38 @@ Cris based authentication: there are no interfaces, no type system and no serial
 It coexists with CK.Auth.Abstractions: the types have the same names but live in another namespace.
 An application uses one or the other, never both.
 
-## The level belongs to the user
+## The level belongs to the actor
 
-[`UserInfo`](UserInfo.cs) is a user identifier, a name, its authentication schemes and its
-[`AuthLevel`](AuthLevel.cs). The level is given when the user is built (or with `WithLevel`), but two
+[`ActorInfo`](ActorInfo.cs) is an actor identifier, a name, its authentication schemes and its
+[`AuthLevel`](AuthLevel.cs). The level is given when the actor is built (or with `WithLevel`), but two
 invariants always hold:
 
-- the anonymous (`UserId` is 0) is always `None`, and only the anonymous can be `None`;
-- a user with the `"Weak"` scheme (`UserInfo.WeakScheme`, matched case-insensitively) is at most `Unsafe`.
+- the anonymous (`ActorId` is 0) is always `None`, and only the anonymous can be `None`;
+- an actor with the `"Weak"` scheme (`ActorInfo.WeakScheme`, matched case-insensitively) is at most `Unsafe`.
 
 ## The session clamps, and can only lower
 
-[`AuthenticationInfo`](AuthenticationInfo.cs) holds the actual user, the user (different when impersonated),
+[`AuthenticationInfo`](AuthenticationInfo.cs) holds the actual actor, the actor (different when impersonated),
 `Expires`, `CriticalExpires` and the `DeviceId`. Every instance goes through the same normalization:
 
 - `utcNow` must be `Utc`; dates must be `Utc` or `Unspecified` (considered Utc), never `Local`;
 - reached dates are dropped, and `CriticalExpires` is clamped to `Expires` (it never extends the session);
 - no `Expires`: the levels are at most `Unsafe`; no `CriticalExpires`: at most `Normal`;
-- the user's level is never above the actual user's level;
-- an anonymous actual user means no dates and no impersonation.
+- the actor's level is never above the actual actor's level;
+- an anonymous actual actor means no dates and no impersonation.
 
 The functional updaters (`CheckExpiration`, `WithExpires`, `WithCriticalExpires`, `WithDeviceId`,
 `Impersonate`, `ClearImpersonation`) return `this` when nothing changes. Since the stored levels are their
 own ceilings, **no updater can raise a level**: only a new authentication (`Create`) can.
 
-`User` and `ActualUser` are the anonymous below `Normal`: using an unsafe identity means writing
-`UnsafeUser` or `UnsafeActualUser` explicitly.
+`Actor` and `ActualActor` are the anonymous below `Normal`: using an unsafe identity means writing
+`UnsafeActor` or `UnsafeActualActor` explicitly.
 
 ## Impersonation
 
-`Impersonate` requires the actual user to be at least `Normal`: the anonymous, the weak actors and the
-expired sessions cannot start an impersonation. A weak actor can never be an actual user that impersonates,
-not even through `Create`. The impersonated user's level is at most the actual user's level, so an
+`Impersonate` requires the actual actor to be at least `Normal`: the anonymous, the weak actors and the
+expired sessions cannot start an impersonation. A weak actor can never be an actual actor that impersonates,
+not even through `Create`. The impersonated actor's level is at most the actual actor's level, so an
 administrator impersonating a weak actor acts at `Unsafe` level.
 
 `Impersonate` is only the mechanism. Whether an impersonation is allowed is decided by the optional
@@ -46,7 +46,7 @@ administrator impersonating a weak actor acts at `Unsafe` level.
 
 ## Login contracts
 
-The authentication center logs users in through these transport neutral contracts (no HTTP, no SQL),
+The authentication center logs actors in through these transport neutral contracts (no HTTP, no SQL),
 implemented by the back-end packages (the database, the weak actors, etc.):
 
 - [`ILoginProvider`](Login/ILoginProvider.cs) (multiple): handles one or more provider names. A scheme is a provider
@@ -54,13 +54,13 @@ implemented by the back-end packages (the database, the weak actors, etc.):
   [`LoginScheme`](Login/LoginScheme.cs)). The basic login is the `"Basic"` provider with a
   [`BasicLoginPayload`](Login/BasicLoginPayload.cs), whose `ToString()` never shows the password. The payload is
   provider dependent and never leaves the process that handles the login.
-- [`UserLoginResult`](Login/UserLoginResult.cs): a successful (non anonymous) `User` at the highest level it can reach,
+- [`ActorLoginResult`](Login/ActorLoginResult.cs): a successful (non anonymous) `Actor` at the highest level it can reach,
   or a positive failure code with its reason, possibly flagged as an unregistered user.
 - [`ILoginValidator`](Login/ILoginValidator.cs) (optional, multiple): when present, a login is first checked
   (`actualLogin` is false), then validated, then actually done.
 - [`IAutoCreateAccountService`](Login/IAutoCreateAccountService.cs) and
   [`IAutoBindingAccountService`](Login/IAutoBindingAccountService.cs) (optional): called for an unregistered user,
-  respectively when nobody is logged in and when a user is logged in.
+  respectively when nobody is logged in and when an actor is logged in.
 - [`LoginContext`](Login/LoginContext.cs): the scheme, the payload, the initial authentication and free user data
   (an invitation token for instance). The first error set cancels the login.
 
@@ -73,13 +73,13 @@ origin, and the `AuthenticationInfo` ambient service is restored from these iden
 and services use "the current authentication" transparently. A command that enters another System must be
 validated again there.
 
-[`IUserInfoProvider`](IUserInfoProvider.cs) reads the users for this restoration. It returns the user at the
-highest level it can reach (the session clamps it) or null when the user doesn't exist or cannot be used
+[`IActorInfoProvider`](IActorInfoProvider.cs) reads the actors for this restoration. It returns the actor at the
+highest level it can reach (the session clamps it) or null when the actor doesn't exist or cannot be used
 anymore: a restoration that fails refuses the command, it never runs it as the anonymous.
 
-`AuthenticationInfo.CreateRestored( actualUser, user, level, deviceId, utcNow )` builds the restored session.
+`AuthenticationInfo.CreateRestored( actualActor, actor, level, deviceId, utcNow )` builds the restored session.
 The origin dates are irrelevant (a delayed command would find them expired): the dates cover the execution,
-`RestoredValidity` (one hour) after `utcNow`, so that the users are exactly at the `level` required by the command
+`RestoredValidity` (one hour) after `utcNow`, so that the actors are exactly at the `level` required by the command
 (`Unsafe`: no dates, `Normal`: `Expires`, `Critical`: both). A restored authentication must never be used to
 issue an authentication token.
 

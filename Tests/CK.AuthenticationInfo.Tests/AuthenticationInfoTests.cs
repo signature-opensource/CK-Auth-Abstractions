@@ -12,32 +12,32 @@ public class AuthenticationInfoTests
     static readonly DateTime _time2 = _time0.AddHours( 2 );
     static readonly DateTime _time3 = _time0.AddHours( 3 );
 
-    static readonly UserInfo _albert = new UserInfo( 3712, "Albert", AuthLevel.Critical );
-    static readonly UserInfo _robert = new UserInfo( 12, "Robert", AuthLevel.Critical );
-    static readonly UserInfo _operator = new UserInfo( 42, "Operator", AuthLevel.Unsafe, [new UserSchemeInfo( UserInfo.WeakScheme, _time0 )] );
+    static readonly ActorInfo _albert = new ActorInfo( 3712, "Albert", AuthLevel.Critical );
+    static readonly ActorInfo _robert = new ActorInfo( 12, "Robert", AuthLevel.Critical );
+    static readonly ActorInfo _operator = new ActorInfo( 42, "Operator", AuthLevel.Unsafe, [new SchemeInfo( ActorInfo.WeakScheme, _time0 )] );
 
     [Test]
     public void None_is_the_anonymous_without_device()
     {
         var none = AuthenticationInfo.None;
-        none.UnsafeUser.ShouldBeSameAs( UserInfo.Anonymous );
-        none.UnsafeActualUser.ShouldBeSameAs( UserInfo.Anonymous );
+        none.UnsafeActor.ShouldBeSameAs( ActorInfo.Anonymous );
+        none.UnsafeActualActor.ShouldBeSameAs( ActorInfo.Anonymous );
         none.Expires.ShouldBeNull();
         none.CriticalExpires.ShouldBeNull();
         none.DeviceId.ShouldBe( "" );
         none.IsImpersonated.ShouldBeFalse();
         new AuthenticationInfoDefaultProvider().Default.ShouldBeSameAs( none );
-        AuthenticationInfo.Create( UserInfo.Anonymous, _time2, _time2, null, _time0 ).ShouldBeSameAs( none );
+        AuthenticationInfo.Create( ActorInfo.Anonymous, _time2, _time2, null, _time0 ).ShouldBeSameAs( none );
     }
 
     [Test]
     public void the_anonymous_has_no_dates_but_can_have_a_device()
     {
-        var a = AuthenticationInfo.Create( UserInfo.Anonymous, _time2, _time1, "D", _time0 );
+        var a = AuthenticationInfo.Create( ActorInfo.Anonymous, _time2, _time1, "D", _time0 );
         a.Expires.ShouldBeNull();
         a.CriticalExpires.ShouldBeNull();
         a.DeviceId.ShouldBe( "D" );
-        a.UnsafeUser.Level.ShouldBe( AuthLevel.None );
+        a.UnsafeActor.Level.ShouldBe( AuthLevel.None );
     }
 
     [Test]
@@ -69,22 +69,22 @@ public class AuthenticationInfoTests
     public void levels_are_clamped_by_the_dates()
     {
         var unsafeInfo = AuthenticationInfo.Create( _albert, null, null, null, _time0 );
-        unsafeInfo.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
-        unsafeInfo.User.ShouldBeSameAs( UserInfo.Anonymous );
-        unsafeInfo.ActualUser.ShouldBeSameAs( UserInfo.Anonymous );
-        unsafeInfo.UnsafeUser.UserId.ShouldBe( 3712 );
+        unsafeInfo.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
+        unsafeInfo.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
+        unsafeInfo.ActualActor.ShouldBeSameAs( ActorInfo.Anonymous );
+        unsafeInfo.UnsafeActor.ActorId.ShouldBe( 3712 );
 
         var normal = AuthenticationInfo.Create( _albert, _time2, null, null, _time0 );
-        normal.User.Level.ShouldBe( AuthLevel.Normal );
-        normal.User.UserId.ShouldBe( 3712 );
+        normal.Actor.Level.ShouldBe( AuthLevel.Normal );
+        normal.Actor.ActorId.ShouldBe( 3712 );
 
         var critical = AuthenticationInfo.Create( _albert, _time2, _time1, null, _time0 );
-        critical.User.Level.ShouldBe( AuthLevel.Critical );
+        critical.Actor.Level.ShouldBe( AuthLevel.Critical );
 
         var expired = AuthenticationInfo.Create( _albert, _time0, _time0, null, _time1 );
         expired.Expires.ShouldBeNull();
         expired.CriticalExpires.ShouldBeNull();
-        expired.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
+        expired.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
     }
 
     [Test]
@@ -92,7 +92,7 @@ public class AuthenticationInfoTests
     {
         var normalAlbert = _albert.WithLevel( AuthLevel.Normal );
         var a = AuthenticationInfo.Create( normalAlbert, _time2, _time1, null, _time0 );
-        a.User.Level.ShouldBe( AuthLevel.Normal );
+        a.Actor.Level.ShouldBe( AuthLevel.Normal );
         a.CriticalExpires.ShouldBe( _time1 );
     }
 
@@ -112,38 +112,38 @@ public class AuthenticationInfoTests
     public void CheckExpiration_only_lowers_the_levels()
     {
         var a = AuthenticationInfo.Create( _albert, _time2, _time1, null, _time0 );
-        a.UnsafeUser.Level.ShouldBe( AuthLevel.Critical );
+        a.UnsafeActor.Level.ShouldBe( AuthLevel.Critical );
         a.CheckExpiration( _time0 ).ShouldBeSameAs( a );
 
         var b = a.CheckExpiration( _time1 );
-        b.UnsafeUser.Level.ShouldBe( AuthLevel.Normal );
+        b.UnsafeActor.Level.ShouldBe( AuthLevel.Normal );
         b.CriticalExpires.ShouldBeNull();
         b.Expires.ShouldBe( _time2 );
 
         var c = b.CheckExpiration( _time2 );
-        c.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
+        c.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
         c.Expires.ShouldBeNull();
-        c.User.ShouldBeSameAs( UserInfo.Anonymous );
-        c.UnsafeUser.UserId.ShouldBe( 3712 );
+        c.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
+        c.UnsafeActor.ActorId.ShouldBe( 3712 );
     }
 
     [Test]
     public void no_updater_can_raise_a_level()
     {
         var expired = AuthenticationInfo.Create( _albert, null, null, null, _time0 );
-        expired.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
+        expired.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
 
         var d = expired.WithExpires( _time3, _time0 ).WithCriticalExpires( _time2, _time0 );
         d.Expires.ShouldBe( _time3 );
         d.CriticalExpires.ShouldBe( _time2 );
-        d.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
-        d.User.ShouldBeSameAs( UserInfo.Anonymous );
+        d.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
+        d.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
 
         var normal = AuthenticationInfo.Create( _albert, _time2, null, null, _time0 );
-        normal.WithCriticalExpires( _time1, _time0 ).UnsafeUser.Level.ShouldBe( AuthLevel.Normal );
+        normal.WithCriticalExpires( _time1, _time0 ).UnsafeActor.Level.ShouldBe( AuthLevel.Normal );
 
         // Only a new authentication raises the level.
-        AuthenticationInfo.Create( _albert, _time2, _time1, null, _time0 ).UnsafeUser.Level.ShouldBe( AuthLevel.Critical );
+        AuthenticationInfo.Create( _albert, _time2, _time1, null, _time0 ).UnsafeActor.Level.ShouldBe( AuthLevel.Critical );
     }
 
     [Test]
@@ -167,14 +167,14 @@ public class AuthenticationInfoTests
     {
         var a = AuthenticationInfo.Create( _albert, _time2, null, null, _time0 ).Impersonate( _robert, _time0 );
         a.IsImpersonated.ShouldBeTrue();
-        a.User.UserId.ShouldBe( 12 );
-        a.User.Level.ShouldBe( AuthLevel.Normal );
-        a.ActualUser.UserId.ShouldBe( 3712 );
-        a.ActualUser.Level.ShouldBe( AuthLevel.Normal );
+        a.Actor.ActorId.ShouldBe( 12 );
+        a.Actor.Level.ShouldBe( AuthLevel.Normal );
+        a.ActualActor.ActorId.ShouldBe( 3712 );
+        a.ActualActor.Level.ShouldBe( AuthLevel.Normal );
 
         var cleared = a.ClearImpersonation( _time0 );
         cleared.IsImpersonated.ShouldBeFalse();
-        cleared.User.UserId.ShouldBe( 3712 );
+        cleared.Actor.ActorId.ShouldBe( 3712 );
     }
 
     [Test]
@@ -182,22 +182,22 @@ public class AuthenticationInfoTests
     {
         var a = AuthenticationInfo.Create( _albert, _time2, _time1, null, _time0 ).Impersonate( _operator, _time0 );
         a.IsImpersonated.ShouldBeTrue();
-        a.ActualUser.Level.ShouldBe( AuthLevel.Critical );
-        a.UnsafeUser.UserId.ShouldBe( 42 );
-        a.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
-        a.User.ShouldBeSameAs( UserInfo.Anonymous );
+        a.ActualActor.Level.ShouldBe( AuthLevel.Critical );
+        a.UnsafeActor.ActorId.ShouldBe( 42 );
+        a.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
+        a.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
         // The administrator can still end the impersonation.
-        a.ClearImpersonation( _time0 ).User.UserId.ShouldBe( 3712 );
+        a.ClearImpersonation( _time0 ).Actor.ActorId.ShouldBe( 3712 );
     }
 
     [Test]
     public void impersonating_the_anonymous_gives_no_level()
     {
-        var a = AuthenticationInfo.Create( _albert, _time2, null, null, _time0 ).Impersonate( UserInfo.Anonymous, _time0 );
+        var a = AuthenticationInfo.Create( _albert, _time2, null, null, _time0 ).Impersonate( ActorInfo.Anonymous, _time0 );
         a.IsImpersonated.ShouldBeTrue();
-        a.UnsafeUser.Level.ShouldBe( AuthLevel.None );
-        a.User.ShouldBeSameAs( UserInfo.Anonymous );
-        a.ActualUser.Level.ShouldBe( AuthLevel.Normal );
+        a.UnsafeActor.Level.ShouldBe( AuthLevel.None );
+        a.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
+        a.ActualActor.Level.ShouldBe( AuthLevel.Normal );
     }
 
     [Test]
@@ -226,10 +226,10 @@ public class AuthenticationInfoTests
         var a = AuthenticationInfo.Create( _albert, _time1, null, null, _time0 ).Impersonate( _robert, _time0 );
         var expired = a.CheckExpiration( _time2 );
         expired.IsImpersonated.ShouldBeTrue();
-        expired.UnsafeActualUser.Level.ShouldBe( AuthLevel.Unsafe );
-        expired.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
-        expired.User.ShouldBeSameAs( UserInfo.Anonymous );
-        expired.ActualUser.ShouldBeSameAs( UserInfo.Anonymous );
+        expired.UnsafeActualActor.Level.ShouldBe( AuthLevel.Unsafe );
+        expired.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
+        expired.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
+        expired.ActualActor.ShouldBeSameAs( ActorInfo.Anonymous );
     }
 
     [TestCase( AuthLevel.Unsafe )]
@@ -238,16 +238,16 @@ public class AuthenticationInfoTests
     public void restored_authentication_is_at_the_required_level_for_RestoredValidity( AuthLevel level )
     {
         var r = AuthenticationInfo.CreateRestored( _albert, _albert, level, "D", _time0 );
-        r.UnsafeUser.UserId.ShouldBe( 3712 );
-        r.UnsafeUser.Level.ShouldBe( level );
-        r.UnsafeActualUser.Level.ShouldBe( level );
+        r.UnsafeActor.ActorId.ShouldBe( 3712 );
+        r.UnsafeActor.Level.ShouldBe( level );
+        r.UnsafeActualActor.Level.ShouldBe( level );
         r.DeviceId.ShouldBe( "D" );
         r.IsImpersonated.ShouldBeFalse();
         var end = _time0 + AuthenticationInfo.RestoredValidity;
         r.Expires.ShouldBe( level >= AuthLevel.Normal ? end : null );
         r.CriticalExpires.ShouldBe( level == AuthLevel.Critical ? end : null );
         // After the validity, the levels drop to Unsafe.
-        r.CheckExpiration( end ).UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
+        r.CheckExpiration( end ).UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
     }
 
     [Test]
@@ -260,8 +260,8 @@ public class AuthenticationInfoTests
     public void restored_weak_actor_stays_Unsafe()
     {
         var r = AuthenticationInfo.CreateRestored( _operator, _operator, AuthLevel.Critical, null, _time0 );
-        r.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
-        r.User.ShouldBeSameAs( UserInfo.Anonymous );
+        r.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
+        r.Actor.ShouldBeSameAs( ActorInfo.Anonymous );
     }
 
     [Test]
@@ -269,14 +269,14 @@ public class AuthenticationInfoTests
     {
         var r = AuthenticationInfo.CreateRestored( _albert, _operator, AuthLevel.Normal, null, _time0 );
         r.IsImpersonated.ShouldBeTrue();
-        r.ActualUser.Level.ShouldBe( AuthLevel.Normal );
-        r.UnsafeUser.UserId.ShouldBe( 42 );
-        r.UnsafeUser.Level.ShouldBe( AuthLevel.Unsafe );
+        r.ActualActor.Level.ShouldBe( AuthLevel.Normal );
+        r.UnsafeActor.ActorId.ShouldBe( 42 );
+        r.UnsafeActor.Level.ShouldBe( AuthLevel.Unsafe );
 
         var r2 = AuthenticationInfo.CreateRestored( _albert, _robert, AuthLevel.Normal, null, _time0 );
-        r2.User.UserId.ShouldBe( 12 );
-        r2.User.Level.ShouldBe( AuthLevel.Normal );
-        r2.ActualUser.UserId.ShouldBe( 3712 );
+        r2.Actor.ActorId.ShouldBe( 12 );
+        r2.Actor.Level.ShouldBe( AuthLevel.Normal );
+        r2.ActualActor.ActorId.ShouldBe( 3712 );
     }
 
     [Test]
@@ -292,18 +292,18 @@ public class AuthenticationInfoTests
         Util.Invokable( () => AuthenticationInfo.CreateRestored( _operator, _robert, AuthLevel.Unsafe, null, _time0 ) )
             .ShouldThrow<ArgumentException>();
         // The anonymous is restored at None level.
-        AuthenticationInfo.CreateRestored( UserInfo.Anonymous, UserInfo.Anonymous, AuthLevel.None, null, _time0 )
+        AuthenticationInfo.CreateRestored( ActorInfo.Anonymous, ActorInfo.Anonymous, AuthLevel.None, null, _time0 )
             .ShouldBeSameAs( AuthenticationInfo.None );
-        AuthenticationInfo.CreateRestored( UserInfo.Anonymous, UserInfo.Anonymous, AuthLevel.Critical, null, _time0 )
+        AuthenticationInfo.CreateRestored( ActorInfo.Anonymous, ActorInfo.Anonymous, AuthLevel.Critical, null, _time0 )
             .ShouldBeSameAs( AuthenticationInfo.None );
     }
 
     [Test]
     public void same_user_identifier_means_no_impersonation()
     {
-        var otherAlbert = new UserInfo( 3712, "Albert (other instance)", AuthLevel.Critical );
+        var otherAlbert = new ActorInfo( 3712, "Albert (other instance)", AuthLevel.Critical );
         var a = AuthenticationInfo.Create( _albert, otherAlbert, _time2, null, null, _time0 );
         a.IsImpersonated.ShouldBeFalse();
-        a.UnsafeUser.ShouldBeSameAs( a.UnsafeActualUser );
+        a.UnsafeActor.ShouldBeSameAs( a.UnsafeActualActor );
     }
 }

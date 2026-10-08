@@ -8,21 +8,21 @@ namespace CK.Core.Tests;
 [TestFixture]
 public class LoginTests
 {
-    static readonly UserInfo _albert = new UserInfo( 3712, "Albert", AuthLevel.Critical );
+    static readonly ActorInfo _albert = new ActorInfo( 3712, "Albert", AuthLevel.Critical );
 
     [Test]
-    public void UserLoginResult_success_and_failure()
+    public void ActorLoginResult_success_and_failure()
     {
-        var s = UserLoginResult.Success( _albert );
+        var s = ActorLoginResult.Success( _albert );
         s.IsSuccess.ShouldBeTrue();
-        s.User.ShouldBeSameAs( _albert );
+        s.Actor.ShouldBeSameAs( _albert );
         s.FailureCode.ShouldBe( 0 );
         s.FailureReason.ShouldBeNull();
         s.IsUnregisteredUser.ShouldBeFalse();
 
-        var f = UserLoginResult.Failure( 5, "Unregistered user.", isUnregisteredUser: true );
+        var f = ActorLoginResult.Failure( 5, "Unregistered user.", isUnregisteredUser: true );
         f.IsSuccess.ShouldBeFalse();
-        f.User.ShouldBeNull();
+        f.Actor.ShouldBeNull();
         f.FailureCode.ShouldBe( 5 );
         f.FailureReason.ShouldBe( "Unregistered user." );
         f.IsUnregisteredUser.ShouldBeTrue();
@@ -30,12 +30,12 @@ public class LoginTests
     }
 
     [Test]
-    public void UserLoginResult_checks_its_arguments()
+    public void ActorLoginResult_checks_its_arguments()
     {
-        Util.Invokable( () => UserLoginResult.Success( UserInfo.Anonymous ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => UserLoginResult.Failure( 0, "Reason" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => UserLoginResult.Failure( -1, "Reason" ) ).ShouldThrow<ArgumentException>();
-        Util.Invokable( () => UserLoginResult.Failure( 1, " " ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => ActorLoginResult.Success( ActorInfo.Anonymous ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => ActorLoginResult.Failure( 0, "Reason" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => ActorLoginResult.Failure( -1, "Reason" ) ).ShouldThrow<ArgumentException>();
+        Util.Invokable( () => ActorLoginResult.Failure( 1, " " ) ).ShouldThrow<ArgumentException>();
     }
 
     [Test]

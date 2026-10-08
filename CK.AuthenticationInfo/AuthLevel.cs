@@ -1,19 +1,19 @@
 namespace CK.Core;
 
 /// <summary>
-/// Defines the level of trust of an authenticated user.
-/// It is carried by the <see cref="UserInfo.Level"/>.
+/// Defines the level of trust of an authenticated actor.
+/// It is carried by the <see cref="ActorInfo.Level"/>.
 /// </summary>
 public enum AuthLevel
 {
     /// <summary>
-    /// No authentication: the user is the <see cref="UserInfo.Anonymous"/>.
+    /// No authentication: the actor is the <see cref="ActorInfo.Anonymous"/>.
     /// </summary>
     None = 0,
 
     /// <summary>
-    /// The user is known but not proven: an expired session or a weak actor
-    /// (see <see cref="UserInfo.WeakScheme"/>).
+    /// The actor is known but not proven: an expired session or a weak actor
+    /// (see <see cref="ActorInfo.WeakScheme"/>).
     /// </summary>
     Unsafe = 1,
 

@@ -45,5 +45,5 @@ public interface ILoginProvider : ISingletonAutoService
     /// This enables a validation step (see <see cref="ILoginValidator"/>) before the actual login.
     /// </param>
     /// <returns>The login result.</returns>
-    ValueTask<UserLoginResult> LoginAsync( IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true );
+    ValueTask<ActorLoginResult> LoginAsync( IActivityMonitor monitor, string scheme, object payload, bool actualLogin = true );
 }

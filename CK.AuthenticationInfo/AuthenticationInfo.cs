@@ -3,21 +3,21 @@ using System;
 namespace CK.Core;
 
 /// <summary>
-/// Immutable authentication information: the actual user, the (possibly impersonated) user, the session
+/// Immutable authentication information: the actual actor, the (possibly impersonated) actor, the session
 /// expiration dates and the device identifier.
 /// <para>
-/// The levels are carried by the users (<see cref="UserInfo.Level"/>). This class only clamps them:
+/// The levels are carried by the actors (<see cref="ActorInfo.Level"/>). This class only clamps them:
 /// <list type="bullet">
 ///     <item>No valid <see cref="Expires"/>: the levels are at most <see cref="AuthLevel.Unsafe"/>.</item>
 ///     <item>No valid <see cref="CriticalExpires"/>: the levels are at most <see cref="AuthLevel.Normal"/>.</item>
-///     <item>The user's level is never greater than the actual user's level.</item>
+///     <item>The actor's level is never greater than the actual actor's level.</item>
 /// </list>
 /// The functional updaters (<see cref="CheckExpiration(DateTime)"/>, <see cref="WithExpires(DateTime?, DateTime)"/>, etc.)
-/// can only lower the levels: raising a level requires a new authentication (a new <see cref="Create(UserInfo, DateTime?, DateTime?, string?, DateTime)"/>).
+/// can only lower the levels: raising a level requires a new authentication (a new <see cref="Create(ActorInfo, DateTime?, DateTime?, string?, DateTime)"/>).
 /// </para>
 /// <para>
-/// The <see cref="User"/> and <see cref="ActualUser"/> are the anonymous when their level is below <see cref="AuthLevel.Normal"/>:
-/// using an unsafe identity requires an explicit use of <see cref="UnsafeUser"/> or <see cref="UnsafeActualUser"/>.
+/// The <see cref="Actor"/> and <see cref="ActualActor"/> are the anonymous when their level is below <see cref="AuthLevel.Normal"/>:
+/// using an unsafe identity requires an explicit use of <see cref="UnsafeActor"/> or <see cref="UnsafeActualActor"/>.
 /// </para>
 /// <para>
 /// This object carries no proof: building one is not authenticating anybody. A trusted instance is the
@@ -26,8 +26,8 @@ namespace CK.Core;
 /// </summary>
 public sealed class AuthenticationInfo : IAmbientAutoService
 {
-    readonly UserInfo _actualUser;
-    readonly UserInfo _user;
+    readonly ActorInfo _actualActor;
+    readonly ActorInfo _actor;
     readonly DateTime? _expires;
     readonly DateTime? _criticalExpires;
     readonly string _deviceId;
@@ -35,12 +35,12 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     /// <summary>
     /// The anonymous authentication without device identifier.
     /// </summary>
-    public static readonly AuthenticationInfo None = new AuthenticationInfo( UserInfo.Anonymous, UserInfo.Anonymous, null, null, string.Empty );
+    public static readonly AuthenticationInfo None = new AuthenticationInfo( ActorInfo.Anonymous, ActorInfo.Anonymous, null, null, string.Empty );
 
-    AuthenticationInfo( UserInfo actualUser, UserInfo user, DateTime? expires, DateTime? criticalExpires, string deviceId )
+    AuthenticationInfo( ActorInfo actualActor, ActorInfo actor, DateTime? expires, DateTime? criticalExpires, string deviceId )
     {
-        _actualUser = actualUser;
-        _user = user;
+        _actualActor = actualActor;
+        _actor = actor;
         _expires = expires;
         _criticalExpires = criticalExpires;
         _deviceId = deviceId;
@@ -49,44 +49,44 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     /// <summary>
     /// Creates a new non impersonated authentication information.
     /// </summary>
-    /// <param name="user">The user.</param>
+    /// <param name="actor">The actor.</param>
     /// <param name="expires">The session expiration. When null or expired, the level is at most <see cref="AuthLevel.Unsafe"/>.</param>
     /// <param name="criticalExpires">The critical expiration. Clamped to <paramref name="expires"/>.</param>
     /// <param name="deviceId">The optional device identifier.</param>
     /// <param name="utcNow">The current date and time. Must be <see cref="DateTimeKind.Utc"/>.</param>
     /// <returns>The authentication information.</returns>
-    public static AuthenticationInfo Create( UserInfo user, DateTime? expires, DateTime? criticalExpires, string? deviceId, DateTime utcNow )
+    public static AuthenticationInfo Create( ActorInfo actor, DateTime? expires, DateTime? criticalExpires, string? deviceId, DateTime utcNow )
     {
-        Throw.CheckNotNullArgument( user );
-        return Create( user, user, expires, criticalExpires, deviceId, utcNow );
+        Throw.CheckNotNullArgument( actor );
+        return Create( actor, actor, expires, criticalExpires, deviceId, utcNow );
     }
 
     /// <summary>
-    /// Creates a new authentication information where <paramref name="user"/> may be impersonated by
-    /// the <paramref name="actualUser"/>.
+    /// Creates a new authentication information where <paramref name="actor"/> may be impersonated by
+    /// the <paramref name="actualActor"/>.
     /// <para>
-    /// This doesn't check the impersonation rules (use <see cref="Impersonate(UserInfo, DateTime)"/> for this)
-    /// except that a weak actor (see <see cref="UserInfo.WeakScheme"/>) can never impersonate anybody.
+    /// This doesn't check the impersonation rules (use <see cref="Impersonate(ActorInfo, DateTime)"/> for this)
+    /// except that a weak actor (see <see cref="ActorInfo.WeakScheme"/>) can never impersonate anybody.
     /// </para>
     /// </summary>
-    /// <param name="actualUser">The actual user.</param>
-    /// <param name="user">The user.</param>
+    /// <param name="actualActor">The actual actor.</param>
+    /// <param name="actor">The actor.</param>
     /// <param name="expires">The session expiration. When null or expired, the levels are at most <see cref="AuthLevel.Unsafe"/>.</param>
     /// <param name="criticalExpires">The critical expiration. Clamped to <paramref name="expires"/>.</param>
     /// <param name="deviceId">The optional device identifier.</param>
     /// <param name="utcNow">The current date and time. Must be <see cref="DateTimeKind.Utc"/>.</param>
     /// <returns>The authentication information.</returns>
-    public static AuthenticationInfo Create( UserInfo actualUser, UserInfo user, DateTime? expires, DateTime? criticalExpires, string? deviceId, DateTime utcNow )
+    public static AuthenticationInfo Create( ActorInfo actualActor, ActorInfo actor, DateTime? expires, DateTime? criticalExpires, string? deviceId, DateTime utcNow )
     {
-        Throw.CheckNotNullArgument( actualUser );
-        Throw.CheckNotNullArgument( user );
-        Throw.CheckArgument( "A weak actor cannot impersonate.", !actualUser.IsWeak || actualUser.UserId == user.UserId );
+        Throw.CheckNotNullArgument( actualActor );
+        Throw.CheckNotNullArgument( actor );
+        Throw.CheckArgument( "A weak actor cannot impersonate.", !actualActor.IsWeak || actualActor.ActorId == actor.ActorId );
         CheckUtcNow( utcNow );
-        return Normalize( null, actualUser, user, expires, criticalExpires, deviceId ?? string.Empty, utcNow );
+        return Normalize( null, actualActor, actor, expires, criticalExpires, deviceId ?? string.Empty, utcNow );
     }
 
     /// <summary>
-    /// The validity of a restored authentication (see <see cref="CreateRestored(UserInfo, UserInfo, AuthLevel, string?, DateTime)"/>):
+    /// The validity of a restored authentication (see <see cref="CreateRestored(ActorInfo, ActorInfo, AuthLevel, string?, DateTime)"/>):
     /// it covers one execution. This is one hour.
     /// </summary>
     public static readonly TimeSpan RestoredValidity = TimeSpan.FromHours( 1 );
@@ -102,55 +102,55 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     ///     <item><see cref="AuthLevel.Normal"/>: <see cref="Expires"/> only.</item>
     ///     <item><see cref="AuthLevel.Critical"/>: <see cref="Expires"/> and <see cref="CriticalExpires"/>.</item>
     /// </list>
-    /// The users are clamped to <paramref name="level"/> (and the invariants of <see cref="UserInfo"/> apply).
+    /// The actors are clamped to <paramref name="level"/> (and the invariants of <see cref="ActorInfo"/> apply).
     /// A restored authentication must never be used to issue an authentication token.
     /// </para>
     /// </summary>
-    /// <param name="actualUser">The actual user.</param>
-    /// <param name="user">The user (the actual user when not impersonated).</param>
+    /// <param name="actualActor">The actual actor.</param>
+    /// <param name="actor">The actor (the actual actor when not impersonated).</param>
     /// <param name="level">
-    /// The level required by the command: at least <see cref="AuthLevel.Unsafe"/>, unless <paramref name="actualUser"/>
+    /// The level required by the command: at least <see cref="AuthLevel.Unsafe"/>, unless <paramref name="actualActor"/>
     /// is the anonymous (the result is then at <see cref="AuthLevel.None"/>).
     /// </param>
     /// <param name="deviceId">The optional device identifier.</param>
     /// <param name="utcNow">The current date and time. Must be <see cref="DateTimeKind.Utc"/>.</param>
     /// <returns>The restored authentication information.</returns>
-    public static AuthenticationInfo CreateRestored( UserInfo actualUser, UserInfo user, AuthLevel level, string? deviceId, DateTime utcNow )
+    public static AuthenticationInfo CreateRestored( ActorInfo actualActor, ActorInfo actor, AuthLevel level, string? deviceId, DateTime utcNow )
     {
-        Throw.CheckNotNullArgument( actualUser );
+        Throw.CheckNotNullArgument( actualActor );
         Throw.CheckOutOfRangeArgument( level >= AuthLevel.None && level <= AuthLevel.Critical );
-        Throw.CheckArgument( "Only the anonymous can be restored at None level.", level != AuthLevel.None || actualUser.IsAnonymous );
+        Throw.CheckArgument( "Only the anonymous can be restored at None level.", level != AuthLevel.None || actualActor.IsAnonymous );
         CheckUtcNow( utcNow );
         DateTime? expires = level >= AuthLevel.Normal ? utcNow + RestoredValidity : null;
         DateTime? criticalExpires = level == AuthLevel.Critical ? expires : null;
-        // The dates clamp the users exactly to the level.
-        return Create( actualUser, user, expires, criticalExpires, deviceId, utcNow );
+        // The dates clamp the actors exactly to the level.
+        return Create( actualActor, actor, expires, criticalExpires, deviceId, utcNow );
     }
 
     /// <summary>
-    /// Gets the user if its level is at least <see cref="AuthLevel.Normal"/>, otherwise the <see cref="UserInfo.Anonymous"/>.
+    /// Gets the actor if its level is at least <see cref="AuthLevel.Normal"/>, otherwise the <see cref="ActorInfo.Anonymous"/>.
     /// </summary>
-    public UserInfo User => _user.Level >= AuthLevel.Normal ? _user : UserInfo.Anonymous;
+    public ActorInfo Actor => _actor.Level >= AuthLevel.Normal ? _actor : ActorInfo.Anonymous;
 
     /// <summary>
-    /// Gets the actual user if its level is at least <see cref="AuthLevel.Normal"/>, otherwise the <see cref="UserInfo.Anonymous"/>.
+    /// Gets the actual actor if its level is at least <see cref="AuthLevel.Normal"/>, otherwise the <see cref="ActorInfo.Anonymous"/>.
     /// </summary>
-    public UserInfo ActualUser => _actualUser.Level >= AuthLevel.Normal ? _actualUser : UserInfo.Anonymous;
+    public ActorInfo ActualActor => _actualActor.Level >= AuthLevel.Normal ? _actualActor : ActorInfo.Anonymous;
 
     /// <summary>
-    /// Gets the user whatever its level is.
+    /// Gets the actor whatever its level is.
     /// </summary>
-    public UserInfo UnsafeUser => _user;
+    public ActorInfo UnsafeActor => _actor;
 
     /// <summary>
-    /// Gets the actual user whatever its level is.
+    /// Gets the actual actor whatever its level is.
     /// </summary>
-    public UserInfo UnsafeActualUser => _actualUser;
+    public ActorInfo UnsafeActualActor => _actualActor;
 
     /// <summary>
-    /// Gets whether the <see cref="UnsafeUser"/> is not the <see cref="UnsafeActualUser"/>.
+    /// Gets whether the <see cref="UnsafeActor"/> is not the <see cref="UnsafeActualActor"/>.
     /// </summary>
-    public bool IsImpersonated => _user.UserId != _actualUser.UserId;
+    public bool IsImpersonated => _actor.ActorId != _actualActor.ActorId;
 
     /// <summary>
     /// Gets the session expiration (Utc). Null when the levels are at most <see cref="AuthLevel.Unsafe"/>.
@@ -178,7 +178,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo CheckExpiration( DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualUser, _user, _expires, _criticalExpires, _deviceId, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, _deviceId, utcNow );
     }
 
     /// <summary>
@@ -190,7 +190,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithExpires( DateTime? expires, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualUser, _user, expires, _criticalExpires, _deviceId, utcNow );
+        return Normalize( this, _actualActor, _actor, expires, _criticalExpires, _deviceId, utcNow );
     }
 
     /// <summary>
@@ -203,7 +203,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithCriticalExpires( DateTime? criticalExpires, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualUser, _user, _expires, criticalExpires, _deviceId, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, criticalExpires, _deviceId, utcNow );
     }
 
     /// <summary>
@@ -215,14 +215,14 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithDeviceId( string? deviceId, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualUser, _user, _expires, _criticalExpires, deviceId ?? string.Empty, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, deviceId ?? string.Empty, utcNow );
     }
 
     /// <summary>
-    /// Impersonates the actual user into <paramref name="user"/>. The impersonated user's level is
-    /// at most the actual user's one.
+    /// Impersonates the actual actor into <paramref name="actor"/>. The impersonated actor's level is
+    /// at most the actual actor's one.
     /// <para>
-    /// This throws an <see cref="InvalidOperationException"/> if the actual user's level is below <see cref="AuthLevel.Normal"/>
+    /// This throws an <see cref="InvalidOperationException"/> if the actual actor's level is below <see cref="AuthLevel.Normal"/>
     /// (this covers the anonymous, the weak actors and the expired sessions).
     /// </para>
     /// <para>
@@ -230,29 +230,29 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     /// the optional <see cref="IImpersonationService"/>. Without it, any impersonation is refused.
     /// </para>
     /// </summary>
-    /// <param name="user">The user to impersonate. When it is the actual user, the impersonation is cleared.</param>
+    /// <param name="actor">The actor to impersonate. When it is the actual actor, the impersonation is cleared.</param>
     /// <param name="utcNow">The current date and time. Must be <see cref="DateTimeKind.Utc"/>.</param>
     /// <returns>This or a new authentication information.</returns>
-    public AuthenticationInfo Impersonate( UserInfo user, DateTime utcNow )
+    public AuthenticationInfo Impersonate( ActorInfo actor, DateTime utcNow )
     {
-        Throw.CheckNotNullArgument( user );
+        Throw.CheckNotNullArgument( actor );
         var current = CheckExpiration( utcNow );
-        if( current._actualUser.Level < AuthLevel.Normal )
+        if( current._actualActor.Level < AuthLevel.Normal )
         {
-            Throw.InvalidOperationException( $"Impersonation requires the actual user to be at least at Normal level (actual user: {current._actualUser})." );
+            Throw.InvalidOperationException( $"Impersonation requires the actual actor to be at least at Normal level (actual actor: {current._actualActor})." );
         }
-        return Normalize( current, current._actualUser, user, current._expires, current._criticalExpires, current._deviceId, utcNow );
+        return Normalize( current, current._actualActor, actor, current._expires, current._criticalExpires, current._deviceId, utcNow );
     }
 
     /// <summary>
-    /// Removes the impersonation if any: the <see cref="UnsafeActualUser"/> becomes the <see cref="UnsafeUser"/>.
+    /// Removes the impersonation if any: the <see cref="UnsafeActualActor"/> becomes the <see cref="UnsafeActor"/>.
     /// </summary>
     /// <param name="utcNow">The current date and time. Must be <see cref="DateTimeKind.Utc"/>.</param>
     /// <returns>This or a new authentication information.</returns>
     public AuthenticationInfo ClearImpersonation( DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualUser, _actualUser, _expires, _criticalExpires, _deviceId, utcNow );
+        return Normalize( this, _actualActor, _actualActor, _expires, _criticalExpires, _deviceId, utcNow );
     }
 
     /// <summary>
@@ -261,7 +261,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     /// <returns>A readable string.</returns>
     public override string ToString()
     {
-        var u = IsImpersonated ? $"{_user} impersonated by {_actualUser}" : _user.ToString();
+        var u = IsImpersonated ? $"{_actor} impersonated by {_actualActor}" : _actor.ToString();
         return _deviceId.Length > 0 ? $"{u} on device '{_deviceId}'" : u;
     }
 
@@ -279,11 +279,11 @@ public sealed class AuthenticationInfo : IAmbientAutoService
         return v > utcNow ? v : null;
     }
 
-    static UserInfo AtMost( UserInfo u, AuthLevel max ) => u.Level <= max ? u : u.WithLevel( max );
+    static ActorInfo AtMost( ActorInfo u, AuthLevel max ) => u.Level <= max ? u : u.WithLevel( max );
 
     static AuthenticationInfo Normalize( AuthenticationInfo? current,
-                                         UserInfo actualUser,
-                                         UserInfo user,
+                                         ActorInfo actualActor,
+                                         ActorInfo actor,
                                          DateTime? expires,
                                          DateTime? criticalExpires,
                                          string deviceId,
@@ -291,9 +291,9 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     {
         expires = NormalizeDate( expires, utcNow, nameof( expires ) );
         criticalExpires = NormalizeDate( criticalExpires, utcNow, nameof( criticalExpires ) );
-        if( actualUser.IsAnonymous )
+        if( actualActor.IsAnonymous )
         {
-            actualUser = user = UserInfo.Anonymous;
+            actualActor = actor = ActorInfo.Anonymous;
             expires = criticalExpires = null;
         }
         else
@@ -305,21 +305,21 @@ public sealed class AuthenticationInfo : IAmbientAutoService
                                 : !criticalExpires.HasValue
                                     ? AuthLevel.Normal
                                     : AuthLevel.Critical;
-            actualUser = AtMost( actualUser, datesLevel );
-            user = user.UserId == actualUser.UserId
-                    ? actualUser
-                    : AtMost( user, actualUser.Level );
+            actualActor = AtMost( actualActor, datesLevel );
+            actor = actor.ActorId == actualActor.ActorId
+                    ? actualActor
+                    : AtMost( actor, actualActor.Level );
         }
         if( current != null
-            && ReferenceEquals( current._actualUser, actualUser )
-            && ReferenceEquals( current._user, user )
+            && ReferenceEquals( current._actualActor, actualActor )
+            && ReferenceEquals( current._actor, actor )
             && current._expires == expires
             && current._criticalExpires == criticalExpires
             && current._deviceId == deviceId )
         {
             return current;
         }
-        if( actualUser.IsAnonymous && deviceId.Length == 0 ) return None;
-        return new AuthenticationInfo( actualUser, user, expires, criticalExpires, deviceId );
+        if( actualActor.IsAnonymous && deviceId.Length == 0 ) return None;
+        return new AuthenticationInfo( actualActor, actor, expires, criticalExpires, deviceId );
     }
 }

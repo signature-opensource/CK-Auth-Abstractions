@@ -76,7 +76,7 @@ public sealed class LoginContext
     /// <param name="errorId">The error identifier.</param>
     /// <param name="errorText">The error text. Defaults to the identifier.</param>
     /// <returns>Always null.</returns>
-    public UserLoginResult? SetError( string errorId, string? errorText = null )
+    public ActorLoginResult? SetError( string errorId, string? errorText = null )
     {
         Throw.CheckNotNullOrWhiteSpaceArgument( errorId );
         if( _errorId == null )
@@ -92,7 +92,7 @@ public sealed class LoginContext
     /// </summary>
     /// <param name="ex">The exception.</param>
     /// <returns>Always null.</returns>
-    public UserLoginResult? SetError( Exception ex )
+    public ActorLoginResult? SetError( Exception ex )
     {
         Throw.CheckNotNullArgument( ex );
         return SetError( ex.GetType().FullName ?? ex.GetType().Name, ex.Message );

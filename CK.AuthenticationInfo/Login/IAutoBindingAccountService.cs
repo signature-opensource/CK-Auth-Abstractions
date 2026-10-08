@@ -10,7 +10,7 @@ namespace CK.Core;
 public interface IAutoBindingAccountService : ISingletonAutoService
 {
     /// <summary>
-    /// Called when a login failed with <see cref="UserLoginResult.IsUnregisteredUser"/> and a user is currently
+    /// Called when a login failed with <see cref="ActorLoginResult.IsUnregisteredUser"/> and a user is currently
     /// logged in (see <see cref="LoginContext.InitialAuthentication"/>).
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
@@ -19,5 +19,5 @@ public interface IAutoBindingAccountService : ISingletonAutoService
     /// The login result of the current user with the new scheme bound, or null if the scheme is not bound
     /// (with an error set on the context or the standard "automatic account binding is disabled" error).
     /// </returns>
-    ValueTask<UserLoginResult?> BindAccountAsync( IActivityMonitor monitor, LoginContext context );
+    ValueTask<ActorLoginResult?> BindAccountAsync( IActivityMonitor monitor, LoginContext context );
 }

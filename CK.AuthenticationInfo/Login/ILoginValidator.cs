@@ -17,8 +17,8 @@ public interface ILoginValidator : ISingletonAutoService
     /// Validates a login. Calls <see cref="LoginContext.SetError(string, string?)"/> to refuse it.
     /// </summary>
     /// <param name="monitor">The monitor to use.</param>
-    /// <param name="loggedInUser">The user that will be logged in.</param>
+    /// <param name="loggedInActor">The actor that will be logged in.</param>
     /// <param name="context">The login context.</param>
     /// <returns>The awaitable.</returns>
-    ValueTask ValidateLoginAsync( IActivityMonitor monitor, UserInfo loggedInUser, LoginContext context );
+    ValueTask ValidateLoginAsync( IActivityMonitor monitor, ActorInfo loggedInActor, LoginContext context );
 }
