@@ -8,7 +8,9 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/CK.Auth.Abstractions.Tests/CK.Auth.Abstractions.Tests.csproj" />
     <Project Path="Tests/CK.AuthenticationInfo.Tests/CK.AuthenticationInfo.Tests.csproj" />
+    <Project Path="Tests/CK.AuthenticationInfo.Passkey.Tests/CK.AuthenticationInfo.Passkey.Tests.csproj" />
   </Folder>
   <Project Path="CK.Auth.Abstractions/CK.Auth.Abstractions.csproj" />
   <Project Path="CK.AuthenticationInfo/CK.AuthenticationInfo.csproj" />
+  <Project Path="CK.AuthenticationInfo.Passkey/CK.AuthenticationInfo.Passkey.csproj" />
 </Solution>
