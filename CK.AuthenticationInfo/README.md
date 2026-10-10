@@ -51,9 +51,9 @@ implemented by the back-end packages (the database, the weak actors, etc.):
 
 - [`ILoginProvider`](Login/ILoginProvider.cs) (multiple): handles one or more provider names. A scheme is a provider
   name optionally followed by a dot and a suffix (`"Oidc.Azure"` is handled by `"Oidc"`, see
-  [`LoginScheme`](Login/LoginScheme.cs)). The basic login is the `"Basic"` provider with a
-  [`BasicLoginPayload`](Login/BasicLoginPayload.cs), whose `ToString()` never shows the password. The payload is
-  provider dependent and never leaves the process that handles the login.
+  [`LoginScheme`](Login/LoginScheme.cs)). This package knows no scheme in particular: each one is defined by the
+  packages that implement it (the `"Basic"` provider and its payload by CK.DB.User.UserPassword for instance). The
+  payload is provider dependent and never leaves the process that handles the login.
 - [`ActorLoginResult`](Login/ActorLoginResult.cs): a successful (non anonymous) `Actor` at the highest level it can reach,
   or a positive failure code with its reason, possibly flagged as an unregistered user.
 - [`ILoginValidator`](Login/ILoginValidator.cs) (optional, multiple): when present, a login is first checked

@@ -9,8 +9,8 @@ namespace CK.Core;
 /// the weak actors, etc.): the authentication center aggregates them.
 /// <para>
 /// A scheme is a provider name, optionally followed by a dot and a suffix: "Oidc.Azure" is handled by the "Oidc"
-/// provider (see <see cref="LoginScheme.GetProviderName(string)"/>). The basic login is the <see cref="BasicLoginPayload.Scheme"/>
-/// provider with a <see cref="BasicLoginPayload"/>.
+/// provider (see <see cref="LoginScheme.GetProviderName(string)"/>). This package knows no scheme in particular: each one
+/// is defined by the packages that implement it (the "Basic" provider and its payload by CK.DB.User.UserPassword for instance).
 /// </para>
 /// <para>
 /// The payload is provider dependent. It never leaves the process that handles the login.

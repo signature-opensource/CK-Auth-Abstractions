@@ -38,16 +38,6 @@ public class LoginTests
         Util.Invokable( () => ActorLoginResult.Failure( 1, " " ) ).ShouldThrow<ArgumentException>();
     }
 
-    [Test]
-    public void BasicLoginPayload_never_shows_the_password()
-    {
-        var p = new BasicLoginPayload( "Albert", "secret-password" );
-        p.ToString().ShouldBe( "BasicLoginPayload { UserName = Albert, Password = *** }" );
-        p.ToString().ShouldNotContain( "secret-password" );
-        p.Password.ShouldBe( "secret-password" );
-        BasicLoginPayload.Scheme.ShouldBe( "Basic" );
-    }
-
     [TestCase( "Basic", "Basic" )]
     [TestCase( "Oidc.Azure", "Oidc" )]
     [TestCase( "Oidc.Azure.Tenant", "Oidc" )]
