@@ -66,9 +66,9 @@ simply `_user != _actualUser`. Two rules:
 
 Everything is immutable: `Impersonate`, `ClearImpersonation`, `SetExpires`, `SetCriticalExpires` and
 `SetDeviceId` build a new instance through the `protected virtual Clone` that specializations override
-to carry their extra fields. When the value they are given is the one already held they do **not**
-return `this` - they return `CheckExpiration( utcNow )`, which may itself hand back a level-downgraded
-instance. "Nothing changed" and "same object" are not the same thing here.
+to carry their extra fields. When the value they are given is the one already held they return
+`CheckExpiration( utcNow )`: the same instance if the level still holds, a level-downgraded one if a
+date has passed.
 
 Note one asymmetry between the two ways a critical date can exceed the normal one. The constructor
 clamps down - `if( criticalExpires.Value > expires.Value ) criticalExpires = expires` - while
@@ -134,11 +134,8 @@ accordingly when the claims come from outside.
   id move onto it. Without impersonation there is no Actor and all of those stay on the primary
   identity.
 
-That last point is worth stating because the XML comment on `IAuthenticationInfoType.ToClaimsIdentity`
-does not: it says *"Expirations and device identifier appear on the subordinated Actor identity"* flatly,
-while the code writes them to a `propertyBearer` that is the primary identity unless `IsImpersonated`.
-`FromClaimsIdentity` reads it back the same way - `id.Actor == null` means "read the claims off the
-identity itself". The comment is stale; the round trip is correct.
+`FromClaimsIdentity` reads it back the same way: without an `Actor`, the claims are read off the
+identity itself.
 
 `FromClaimsIdentity` returns **null** - it does not throw - for anything whose `AuthenticationType` is
 neither `CKA` nor `CKA-S`. And the `acr` claim is **ignored on the way back in**: the level is recomputed
@@ -161,7 +158,7 @@ name passes. Since that property is what `[Authorize]` reads, this specializatio
 - [`IUserInfoProvider`](IUserInfoProvider.cs) is an `ISingletonAutoService` that reads or synthesizes an
   `IUserInfo` from an identifier.
 
-## Requires.
+## Requires
 
 - `CK.Abstractions` for the DI markers, `CK.ActivityMonitor.SimpleSender`, and `Newtonsoft.Json` for the
   `JObject` form.
