@@ -28,7 +28,7 @@ invariants always hold:
 - an anonymous actual actor means no dates and no impersonation.
 
 The functional updaters (`CheckExpiration`, `WithExpires`, `WithCriticalExpires`, `WithDeviceId`,
-`Impersonate`, `ClearImpersonation`) return `this` when nothing changes. Since the stored levels are their
+`WithCallerParty`, `Impersonate`, `ClearImpersonation`) return `this` when nothing changes. Since the stored levels are their
 own ceilings, **no updater can raise a level**: only a new authentication (`Create`) can.
 
 `Actor` and `ActualActor` are the anonymous below `Normal`: using an unsafe identity means writing
@@ -43,6 +43,19 @@ administrator impersonating a weak actor acts at `Unsafe` level.
 
 `Impersonate` is only the mechanism. Whether an impersonation is allowed is decided by the optional
 [`IImpersonationService`](IImpersonationService.cs): without it, any impersonation is refused.
+
+## Caller party
+
+`CallerPartyId` is the party through which the identity entered: the remote party that called us, or our local party
+when we received it directly. It is the actor identifier of that party (its PartyActor), 0 when there is none (no party
+model installed, or the party's identifier not resolved yet). It is a third role, orthogonal to the actors:
+impersonation stays about users, so "Alice impersonating Bob" received from the party Paul keeps Alice, Bob and Paul.
+
+It is never carried by a command nor a token: whoever builds the information at reception sets it with
+`WithCallerParty`. `Create` and `CreateRestored` start at 0; the other updaters keep it (changing who you impersonate
+doesn't change who called). `WithCallerParty` doesn't change the levels: when the caller party is not the local one,
+the builder caps them with the optional [`ICallerPartyService`](ICallerPartyService.cs). Without it, any caller party
+other than the local one is refused.
 
 ## Login contracts
 

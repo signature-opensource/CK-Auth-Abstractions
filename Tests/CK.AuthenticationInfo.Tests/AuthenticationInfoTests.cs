@@ -306,4 +306,56 @@ public class AuthenticationInfoTests
         a.IsImpersonated.ShouldBeFalse();
         a.UnsafeActor.ShouldBeSameAs( a.UnsafeActualActor );
     }
+
+    [Test]
+    public void caller_party_is_0_on_creation_and_set_by_WithCallerParty()
+    {
+        AuthenticationInfo.None.CallerPartyId.ShouldBe( 0 );
+        var a = AuthenticationInfo.Create( _albert, _time2, _time1, "D", _time0 );
+        a.CallerPartyId.ShouldBe( 0 );
+        AuthenticationInfo.CreateRestored( _albert, _albert, AuthLevel.Normal, null, _time0 ).CallerPartyId.ShouldBe( 0 );
+
+        var c = a.WithCallerParty( 77 );
+        c.CallerPartyId.ShouldBe( 77 );
+        c.WithCallerParty( 77 ).ShouldBeSameAs( c );
+        a.WithCallerParty( 0 ).ShouldBeSameAs( a );
+        c.WithCallerParty( 0 ).CallerPartyId.ShouldBe( 0 );
+        Util.Invokable( () => a.WithCallerParty( -1 ) ).ShouldThrow<ArgumentOutOfRangeException>();
+
+        // The caller party doesn't change the levels nor the other properties.
+        c.UnsafeActualActor.ShouldBeSameAs( a.UnsafeActualActor );
+        c.UnsafeActor.ShouldBeSameAs( a.UnsafeActor );
+        c.Expires.ShouldBe( a.Expires );
+        c.CriticalExpires.ShouldBe( a.CriticalExpires );
+        c.DeviceId.ShouldBe( "D" );
+        c.ToString().ShouldBe( $"{c.UnsafeActor} on device 'D' (caller party #77)" );
+    }
+
+    [Test]
+    public void the_updaters_keep_the_caller_party()
+    {
+        var c = AuthenticationInfo.Create( _albert, _time3, _time2, null, _time0 ).WithCallerParty( 77 );
+        c.CheckExpiration( _time1 ).CallerPartyId.ShouldBe( 77 );
+        c.CheckExpiration( _time2 ).CallerPartyId.ShouldBe( 77 );
+        c.WithExpires( _time2, _time0 ).CallerPartyId.ShouldBe( 77 );
+        c.WithCriticalExpires( _time1, _time0 ).CallerPartyId.ShouldBe( 77 );
+        c.WithDeviceId( "D", _time0 ).CallerPartyId.ShouldBe( 77 );
+        var imp = c.Impersonate( _robert, _time0 );
+        imp.CallerPartyId.ShouldBe( 77 );
+        imp.ClearImpersonation( _time0 ).CallerPartyId.ShouldBe( 77 );
+        // Everything expired: the actors are lowered, the caller party stays.
+        c.CheckExpiration( _time3 ).CallerPartyId.ShouldBe( 77 );
+    }
+
+    [Test]
+    public void the_anonymous_with_a_caller_party_is_not_None()
+    {
+        var a = AuthenticationInfo.None.WithCallerParty( 77 );
+        a.ShouldNotBeSameAs( AuthenticationInfo.None );
+        a.CallerPartyId.ShouldBe( 77 );
+        a.UnsafeActor.ShouldBeSameAs( ActorInfo.Anonymous );
+        a.CheckExpiration( _time0 ).ShouldBeSameAs( a );
+        a.WithCallerParty( 0 ).ShouldBeSameAs( AuthenticationInfo.None );
+        a.WithDeviceId( "D", _time0 ).WithDeviceId( null, _time0 ).CallerPartyId.ShouldBe( 77 );
+    }
 }
