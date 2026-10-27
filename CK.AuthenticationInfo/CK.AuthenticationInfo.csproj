@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CK.Core</RootNamespace>
-    <Description>Minimal immutable authentication model: UserInfo (that carries its AuthLevel) and AuthenticationInfo (the session), with functional updaters.</Description>
+    <Description>Minimal immutable authentication model: ActorInfo (that carries its AuthLevel) and AuthenticationInfo (the session), with functional updaters.</Description>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="CK.Abstractions" Version="31.0.2-0.cris-auth.0.ci.2" />

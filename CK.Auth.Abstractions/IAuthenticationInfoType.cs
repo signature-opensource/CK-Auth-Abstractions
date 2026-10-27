@@ -64,9 +64,10 @@ public interface IAuthenticationInfoType
     /// </para>
     /// <para>
     /// When <paramref name="userInfoOnly"/> is false, the claim's AuthenticationType is "CKA" (<see cref="IAuthenticationTypeSystem.ClaimAuthenticationType"/>)
-    /// and the created ClaimIdentity contains the unsafe user claims: the subordinated <see cref="ClaimsIdentity.Actor"/> is used
-    /// for impersonation and contains a <see cref="StdAuthenticationTypeSystem.AuthLevelKeyType"/> claim with the authentication level.
-    /// Expirations and device identifier appear on the subordinated Actor identity. 
+    /// and the created ClaimIdentity contains the unsafe user claims. When the info is impersonated, the subordinated
+    /// <see cref="ClaimsIdentity.Actor"/> contains the unsafe actual user claims.
+    /// The <see cref="StdAuthenticationTypeSystem.AuthLevelKeyType"/> claim with the authentication level, the expirations
+    /// and the device identifier appear on the Actor identity when impersonated, otherwise on the primary identity.
     /// </para>
     /// </summary>
     /// <param name="info">The authentication information.</param>
