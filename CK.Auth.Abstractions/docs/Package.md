@@ -1,9 +1,4 @@
-The authentication contracts of the CK stack: who is logged in, how strongly, and on whose behalf.
+**Deprecated: replaced by `CK.AuthenticationInfo`** ([documentation](https://github.com/signature-opensource/CK-Auth-Abstractions/blob/stable/CK.AuthenticationInfo/README.md)).
 
-`IUserInfo` and `IAuthenticationInfo` model the user, the impersonation and the expiration dates, and
-the four `AuthLevel` values - None, Unsafe, Normal, Critical - are derived from those dates rather than
-set. At Unsafe level the `User` property is the anonymous, so reading the real identity means writing
-`UnsafeUser` explicitly.
-
-`StdUserInfo`, `StdAuthenticationInfo` and the extensible `StdAuthenticationTypeSystem` provide the
-standard immutable implementation, with claims, JSON and binary round trips.
+This package is a tombstone: a project that depends on it fails to build (`CKDEPRECATED`). See the
+[migration guide](https://github.com/signature-opensource/CK-Stack/blob/main/Docs/Migrations/v2026.282-to-explo-cris-auth.md).

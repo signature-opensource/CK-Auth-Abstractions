@@ -1,11 +1,7 @@
 # CK.AuthenticationInfo
 
 Who is logged in, how strongly, and on whose behalf, as two sealed immutable classes in the `CK.Core`
-namespace. This package replaces [CK.Auth.Abstractions](../CK.Auth.Abstractions/README.md) for the
-Cris based authentication: there are no interfaces, no type system and no serialization.
-
-It coexists with CK.Auth.Abstractions: the types have the same names but live in another namespace.
-An application uses one or the other, never both.
+namespace, for the Cris based authentication: there are no interfaces, no type system and no serialization.
 
 ## The level belongs to the actor
 
