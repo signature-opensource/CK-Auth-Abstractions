@@ -2,7 +2,7 @@
 
 The passkey (WebAuthn) contracts between the two parties that must agree on them, and nobody else:
 
-- the **authentication center**, that runs the WebAuthn protocol and verifies the passkeys (CK.AppIdentity.Cris.AuthCenter.Passkey);
+- the **authentication center**, that runs the WebAuthn protocol and verifies the passkeys (CK.AppIdentity.AuthCenter.Passkey);
 - the **storage**, that keeps them (CK.DB.User.UserPasskey for instance).
 
 They never reference each other. This package exists only when passkeys are wanted: the generic
