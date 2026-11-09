@@ -4,7 +4,7 @@ namespace CK.Core;
 
 /// <summary>
 /// Immutable authentication information: the actual actor, the (possibly impersonated) actor, the session
-/// expiration dates, the device identifier and the <see cref="CallerPartyId"/>.
+/// expiration dates, the device identifier and the <see cref="CallerPartyFullName"/>.
 /// <para>
 /// The levels are carried by the actors (<see cref="ActorInfo.Level"/>). This class only clamps them:
 /// <list type="bullet">
@@ -31,21 +31,21 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     readonly DateTime? _expires;
     readonly DateTime? _criticalExpires;
     readonly string _deviceId;
-    readonly int _callerPartyId;
+    readonly string? _callerPartyFullName;
 
     /// <summary>
     /// The anonymous authentication without device identifier.
     /// </summary>
-    public static readonly AuthenticationInfo None = new AuthenticationInfo( ActorInfo.Anonymous, ActorInfo.Anonymous, null, null, string.Empty, 0 );
+    public static readonly AuthenticationInfo None = new AuthenticationInfo( ActorInfo.Anonymous, ActorInfo.Anonymous, null, null, string.Empty, null );
 
-    AuthenticationInfo( ActorInfo actualActor, ActorInfo actor, DateTime? expires, DateTime? criticalExpires, string deviceId, int callerPartyId )
+    AuthenticationInfo( ActorInfo actualActor, ActorInfo actor, DateTime? expires, DateTime? criticalExpires, string deviceId, string? callerPartyFullName )
     {
         _actualActor = actualActor;
         _actor = actor;
         _expires = expires;
         _criticalExpires = criticalExpires;
         _deviceId = deviceId;
-        _callerPartyId = callerPartyId;
+        _callerPartyFullName = callerPartyFullName;
     }
 
     /// <summary>
@@ -84,7 +84,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
         Throw.CheckNotNullArgument( actor );
         Throw.CheckArgument( "A weak actor cannot impersonate.", !actualActor.IsWeak || actualActor.ActorId == actor.ActorId );
         CheckUtcNow( utcNow );
-        return Normalize( null, actualActor, actor, expires, criticalExpires, deviceId ?? string.Empty, 0, utcNow );
+        return Normalize( null, actualActor, actor, expires, criticalExpires, deviceId ?? string.Empty, null, utcNow );
     }
 
     /// <summary>
@@ -174,16 +174,16 @@ public sealed class AuthenticationInfo : IAmbientAutoService
 
     /// <summary>
     /// Gets the party through which this identity entered: the remote party that called us, or our local party when we
-    /// received it directly (a browser on our own endpoint, our own background). It is the actor identifier of that
-    /// party (its PartyActor). 0 when there is no identifier: no party model is installed, or the party's identifier is
-    /// not resolved yet.
+    /// received it directly (a browser on our own endpoint, our own background). It is the full name of that party
+    /// (its <c>IParty.FullName</c>, unique across a System). Null when it is unknown or not applicable (no party model
+    /// is installed). Full names are compared with <see cref="StringComparison.Ordinal"/>.
     /// <para>
     /// It is never carried by a command nor an authentication token: it is derived at reception by whoever builds this
-    /// information (see <see cref="WithCallerParty(int)"/>), who also applies the <see cref="ICallerPartyService"/>
+    /// information (see <see cref="WithCallerParty(string?)"/>), who also applies the <see cref="ICallerPartyService"/>
     /// level cap when the caller party is not the local one.
     /// </para>
     /// </summary>
-    public int CallerPartyId => _callerPartyId;
+    public string? CallerPartyFullName => _callerPartyFullName;
 
     /// <summary>
     /// Lowers the levels if <see cref="Expires"/> or <see cref="CriticalExpires"/> are reached.
@@ -193,7 +193,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo CheckExpiration( DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, _deviceId, _callerPartyId, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, _deviceId, _callerPartyFullName, utcNow );
     }
 
     /// <summary>
@@ -205,7 +205,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithExpires( DateTime? expires, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualActor, _actor, expires, _criticalExpires, _deviceId, _callerPartyId, utcNow );
+        return Normalize( this, _actualActor, _actor, expires, _criticalExpires, _deviceId, _callerPartyFullName, utcNow );
     }
 
     /// <summary>
@@ -218,7 +218,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithCriticalExpires( DateTime? criticalExpires, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualActor, _actor, _expires, criticalExpires, _deviceId, _callerPartyId, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, criticalExpires, _deviceId, _callerPartyFullName, utcNow );
     }
 
     /// <summary>
@@ -230,21 +230,21 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo WithDeviceId( string? deviceId, DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, deviceId ?? string.Empty, _callerPartyId, utcNow );
+        return Normalize( this, _actualActor, _actor, _expires, _criticalExpires, deviceId ?? string.Empty, _callerPartyFullName, utcNow );
     }
 
     /// <summary>
-    /// Sets a new <see cref="CallerPartyId"/>. This doesn't change the levels: the <see cref="ICallerPartyService"/> cap
+    /// Sets a new <see cref="CallerPartyFullName"/>. This doesn't change the levels: the <see cref="ICallerPartyService"/> cap
     /// is applied by whoever builds this information.
     /// </summary>
-    /// <param name="partyActorId">The actor identifier of the caller party. 0 when there is none.</param>
+    /// <param name="fullName">The full name of the caller party. Null when it is unknown or not applicable.</param>
     /// <returns>This or a new authentication information.</returns>
-    public AuthenticationInfo WithCallerParty( int partyActorId )
+    public AuthenticationInfo WithCallerParty( string? fullName )
     {
-        Throw.CheckOutOfRangeArgument( partyActorId >= 0 );
-        if( partyActorId == _callerPartyId ) return this;
-        if( partyActorId == 0 && _actualActor.IsAnonymous && _deviceId.Length == 0 ) return None;
-        return new AuthenticationInfo( _actualActor, _actor, _expires, _criticalExpires, _deviceId, partyActorId );
+        Throw.CheckArgument( fullName == null || !string.IsNullOrWhiteSpace( fullName ) );
+        if( fullName == _callerPartyFullName ) return this;
+        if( fullName == null && _actualActor.IsAnonymous && _deviceId.Length == 0 ) return None;
+        return new AuthenticationInfo( _actualActor, _actor, _expires, _criticalExpires, _deviceId, fullName );
     }
 
     /// <summary>
@@ -270,7 +270,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
         {
             Throw.InvalidOperationException( $"Impersonation requires the actual actor to be at least at Normal level (actual actor: {current._actualActor})." );
         }
-        return Normalize( current, current._actualActor, actor, current._expires, current._criticalExpires, current._deviceId, current._callerPartyId, utcNow );
+        return Normalize( current, current._actualActor, actor, current._expires, current._criticalExpires, current._deviceId, current._callerPartyFullName, utcNow );
     }
 
     /// <summary>
@@ -281,7 +281,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     public AuthenticationInfo ClearImpersonation( DateTime utcNow )
     {
         CheckUtcNow( utcNow );
-        return Normalize( this, _actualActor, _actualActor, _expires, _criticalExpires, _deviceId, _callerPartyId, utcNow );
+        return Normalize( this, _actualActor, _actualActor, _expires, _criticalExpires, _deviceId, _callerPartyFullName, utcNow );
     }
 
     /// <summary>
@@ -292,7 +292,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
     {
         var u = IsImpersonated ? $"{_actor} impersonated by {_actualActor}" : _actor.ToString();
         if( _deviceId.Length > 0 ) u = $"{u} on device '{_deviceId}'";
-        return _callerPartyId != 0 ? $"{u} (caller party #{_callerPartyId})" : u;
+        return _callerPartyFullName != null ? $"{u} (caller party '{_callerPartyFullName}')" : u;
     }
 
     static void CheckUtcNow( DateTime utcNow )
@@ -317,7 +317,7 @@ public sealed class AuthenticationInfo : IAmbientAutoService
                                          DateTime? expires,
                                          DateTime? criticalExpires,
                                          string deviceId,
-                                         int callerPartyId,
+                                         string? callerPartyFullName,
                                          DateTime utcNow )
     {
         expires = NormalizeDate( expires, utcNow, nameof( expires ) );
@@ -347,11 +347,11 @@ public sealed class AuthenticationInfo : IAmbientAutoService
             && current._expires == expires
             && current._criticalExpires == criticalExpires
             && current._deviceId == deviceId
-            && current._callerPartyId == callerPartyId )
+            && current._callerPartyFullName == callerPartyFullName )
         {
             return current;
         }
-        if( actualActor.IsAnonymous && deviceId.Length == 0 && callerPartyId == 0 ) return None;
-        return new AuthenticationInfo( actualActor, actor, expires, criticalExpires, deviceId, callerPartyId );
+        if( actualActor.IsAnonymous && deviceId.Length == 0 && callerPartyFullName == null ) return None;
+        return new AuthenticationInfo( actualActor, actor, expires, criticalExpires, deviceId, callerPartyFullName );
     }
 }

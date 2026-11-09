@@ -42,13 +42,13 @@ administrator impersonating a weak actor acts at `Unsafe` level.
 
 ## Caller party
 
-`CallerPartyId` is the party through which the identity entered: the remote party that called us, or our local party
-when we received it directly. It is the actor identifier of that party (its PartyActor), 0 when there is none (no party
-model installed, or the party's identifier not resolved yet). It is a third role, orthogonal to the actors:
+`CallerPartyFullName` is the party through which the identity entered: the remote party that called us, or our local
+party when we received it directly. It is the full name of that party (unique across a System, compared ordinally),
+null when it is unknown or not applicable (no party model installed). It is a third role, orthogonal to the actors:
 impersonation stays about users, so "Alice impersonating Bob" received from the party Paul keeps Alice, Bob and Paul.
 
 It is never carried by a command nor a token: whoever builds the information at reception sets it with
-`WithCallerParty`. `Create` and `CreateRestored` start at 0; the other updaters keep it (changing who you impersonate
+`WithCallerParty`. `Create` and `CreateRestored` start at null; the other updaters keep it (changing who you impersonate
 doesn't change who called). `WithCallerParty` doesn't change the levels: when the caller party is not the local one,
 the builder caps them with the optional [`ICallerPartyService`](ICallerPartyService.cs). Without it, any caller party
 other than the local one is refused.
