@@ -11,5 +11,6 @@
   </Folder>
   <Project Path="CK.Auth.Abstractions/CK.Auth.Abstractions.csproj" />
   <Project Path="CK.AuthenticationInfo/CK.AuthenticationInfo.csproj" />
+  <Project Path="CK.AuthenticationInfo.Oidc/CK.AuthenticationInfo.Oidc.csproj" />
   <Project Path="CK.AuthenticationInfo.Passkey/CK.AuthenticationInfo.Passkey.csproj" />
 </Solution>

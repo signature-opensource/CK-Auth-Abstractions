@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CK.Core</RootNamespace>
+    <Description>OpenID Connect contract between the authentication center that runs the protocol and the storage of the identities: the IOidcLoginPayload of the "Oidc" provider.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CK.AuthenticationInfo\CK.AuthenticationInfo.csproj" />
+  </ItemGroup>
+</Project>
