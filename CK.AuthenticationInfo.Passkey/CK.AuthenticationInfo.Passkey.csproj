@@ -2,7 +2,6 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>CK.Core</RootNamespace>
-    <Description>Passkey (WebAuthn) contracts between the authentication center that verifies the passkeys and the storage that keeps them: IPasskeyStore, PasskeyCredential and the PasskeyLoginPayload of the "Passkey" scheme.</Description>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\CK.AuthenticationInfo\CK.AuthenticationInfo.csproj" />
